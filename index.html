@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OVW4 Subway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07050f;
+      --card-bg: #0f0a1e;
+      --purple: #7c3aed;
+      --purple-light: #a855f7;
+      --purple-glow: #c084fc;
+      --violet: #4c1d95;
+      --accent: #e879f9;
+      --text: #f0e6ff;
+      --text-dim: #9d8abf;
+      --star: #facc15;
+      --border: rgba(168, 85, 247, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── STARS BACKGROUND ─── */
+    #stars-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ─── INTRO SCREEN ─── */
+    #intro {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #intro .intro-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.4rem, 4vw, 2.8rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 30px #a855f7, 0 0 60px #7c3aed;
+      animation: introPulse 1.5s ease-in-out infinite alternate;
+    }
+
+    #intro .intro-sub {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    @keyframes introPulse {
+      from { text-shadow: 0 0 20px #a855f7, 0 0 40px #7c3aed; }
+      to   { text-shadow: 0 0 40px #c084fc, 0 0 80px #a855f7, 0 0 120px #7c3aed; }
+    }
+
+    #intro.fade-out {
+      animation: fadeOut 1s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; pointer-events: none; }
+    }
+
+    /* ─── MAIN APP ─── */
+    #app {
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      min-height: 100vh;
+    }
+    #app.visible { opacity: 1; }
+
+    /* ─── HEADER ─── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7, 5, 15, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #a855f7, #e879f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-btn {
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1.1rem;
+    }
+    .header-btn:hover {
+      background: rgba(124, 58, 237, 0.35);
+      color: var(--purple-glow);
+      border-color: var(--purple-light);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+    }
+
+    .pseudo-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      color: var(--purple-glow);
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 16px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── SEARCH BAR ─── */
+    .search-wrap {
+      padding: 28px 32px 0;
+      max-width: 520px;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: rgba(15, 10, 30, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      padding: 12px 18px 12px 44px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%239d8abf' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 14px center;
+    }
+    .search-wrap input:focus {
+      border-color: var(--purple-light);
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.2);
+    }
+    .search-wrap input::placeholder { color: var(--text-dim); }
+
+    /* ─── SECTION TITLE ─── */
+    .section-title {
+      padding: 28px 32px 0;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* ─── MAP GRID ─── */
+    .maps-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 20px 32px 40px;
+      max-width: 1200px;
+    }
+
+    .map-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+    .map-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 40px rgba(124, 58, 237, 0.35), 0 0 0 1px rgba(168, 85, 247, 0.4);
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+
+    .map-card:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .map-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #1a0a2e, #0f0520);
+    }
+
+    .map-thumb-placeholder {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #1a0a2e 0%, #0d0520 50%, #150930 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-thumb-placeholder::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+    }
+
+    .map-info {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.03em;
+    }
+
+    .map-sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 2px;
+    }
+
+    .fav-btn {
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .fav-btn:hover { background: rgba(124, 58, 237, 0.3); }
+    .fav-btn.active { background: rgba(250, 204, 21, 0.15); border-color: rgba(250, 204, 21, 0.4); }
+
+    /* ─── MODALS ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: #0f0a1e;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 20px;
+      padding: 32px;
+      width: 90%;
+      max-width: 480px;
+      box-shadow: 0 0 60px rgba(124, 58, 237, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .modal-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    /* Settings tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(124, 58, 237, 0.08);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .tab-btn.active {
+      background: rgba(124, 58, 237, 0.4);
+      color: var(--purple-glow);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Resolution grid */
+    .res-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .res-btn {
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .res-btn:hover { border-color: var(--purple-light); color: var(--text); }
+    .res-btn.active {
+      background: rgba(124, 58, 237, 0.35);
+      border-color: var(--purple-light);
+      color: var(--purple-glow);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+    }
+
+    /* Stretch slider */
+    .setting-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      color: var(--text);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: var(--text-dim);
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: rgba(124, 58, 237, 0.5); border-color: var(--purple-light); }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); background: var(--purple-glow); }
+
+    .stretch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 4px;
+      background: rgba(124, 58, 237, 0.2);
+      border-radius: 4px;
+      outline: none;
+      margin: 10px 0;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      background: var(--purple-light);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+    }
+
+    .hint-text {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    /* Pseudo input */
+    .input-field {
+      width: 100%;
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+    .input-field:focus { border-color: var(--purple-light); }
+
+    .save-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 13px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+    .save-btn:hover { opacity: 0.9; box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+
+    .reset-btn {
+      width: 100%;
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 11px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover { border-color: var(--purple-light); color: var(--text); }
+
+    /* No results */
+    .no-results {
+      text-align: center;
+      padding: 60px 32px;
+      color: var(--text-dim);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      display: none;
+    }
+
+    /* Nebula glow blobs */
+    .nebula {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .nebula-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      top: -100px; right: -100px;
+    }
+    .nebula-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(232,121,249,0.08) 0%, transparent 70%);
+      bottom: 200px; left: -80px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Stars -->
+  <canvas id="stars-canvas"></canvas>
+  <div class="nebula nebula-1"></div>
+  <div class="nebula nebula-2"></div>
+
+  <!-- Intro -->
+  <div id="intro">
+    <div class="intro-text">.gg/pvblueyeti</div>
+    <div class="intro-sub">OVW4 Subway</div>
+  </div>
+
+  <!-- App -->
+  <div id="app">
+    <header>
+      <div class="logo">OVW4 SUBWAY</div>
+      <div class="header-right">
+        <div class="pseudo-display" id="pseudo-display">Player</div>
+        <button class="header-btn" onclick="openDiscord()" title="Discord">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.033.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        </button>
+        <button class="header-btn" onclick="openSettings()" title="Paramètres">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Rechercher une map..." oninput="filterMaps()" />
+    </div>
+
+    <div class="section-title">Maps disponibles</div>
+
+    <div class="maps-grid" id="maps-grid"></div>
+    <div class="no-results" id="no-results">Aucune map trouvée</div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Paramètres</div>
+        <button class="modal-close" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('general')">Général</button>
+        <button class="tab-btn" onclick="switchTab('display')">Affichage</button>
+      </div>
+
+      <!-- General tab -->
+      <div class="tab-panel active" id="tab-general">
+        <div class="setting-label">Pseudo</div>
+        <input class="input-field" id="pseudo-input" type="text" placeholder="Ton pseudo..." maxlength="20" />
+        <button class="save-btn" onclick="savePseudo()">Sauvegarder</button>
+      </div>
+
+      <!-- Display tab -->
+      <div class="tab-panel" id="tab-display">
+        <div class="setting-label">Résolution <span id="res-current" style="color:var(--purple-glow)">Native</span></div>
+        <div class="res-grid" id="res-grid">
+          <button class="res-btn" onclick="setRes('608x1080')">608×1080</button>
+          <button class="res-btn" onclick="setRes('800x600')">800×600</button>
+          <button class="res-btn" onclick="setRes('800x1080')">800×1080</button>
+          <button class="res-btn" onclick="setRes('720x1280')">720×1280</button>
+          <button class="res-btn" onclick="setRes('768x1024')">768×1024</button>
+          <button class="res-btn" onclick="setRes('820x1180')">820×1180</button>
+          <button class="res-btn" onclick="setRes('1024x1366')">1024×1366</button>
+          <button class="res-btn active" onclick="setRes('native')">Native</button>
+        </div>
+        <p class="hint-text" style="margin-bottom:18px">Appuyez sur F11 pour le plein écran.</p>
+
+        <div class="stretch-row">
+          <div class="setting-label" style="margin:0">Screen Stretch</div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="stretch-toggle" onchange="toggleStretch()" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div id="stretch-controls" style="opacity:0.4;pointer-events:none;transition:opacity 0.2s">
+          <div class="setting-label">Intensité : <span id="stretch-val">0%</span></div>
+          <input type="range" id="stretch-slider" min="0" max="100" value="0" oninput="updateStretch()" />
+          <p class="hint-text">Étire le jeu horizontalement (0% = pas d'étirement, 100% = double largeur). Désactive la résolution personnalisée si actif.</p>
+        </div>
+
+        <button class="reset-btn" onclick="resetDisplay()">Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="intro-audio" src="intro.mp3" preload="auto"></audio>
+
+  <script>
+    // ─── STARS ───
+    const canvas = document.getElementById('stars-canvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < 180; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.5 + 0.3,
+          a: Math.random(),
+          speed: Math.random() * 0.005 + 0.002
+        });
+      }
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(s => {
+        s.a += s.speed;
+        const alpha = (Math.sin(s.a) + 1) / 2 * 0.8 + 0.1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,180,255,${alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(drawStars);
+    }
+
+    resizeCanvas();
+    initStars();
+    drawStars();
+    window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
+
+    // ─── MAPS DATA ───
+    const maps = [
+      { id: 'berlin',        name: 'Berlin',        emoji: '🇩🇪', url: 'https://yell0wsuit.page/assets/games/subway-surfers-unity/berlin.html' },
+      { id: 'beijing',       name: 'Beijing',       emoji: '🇨🇳', url: 'https://yell0wsuit.page/assets/games/subway-surfers-unity/beijing.html' },
+      { id: 'miami',         name: 'Miami',         emoji: '🇺🇸', url: 'https://yell0wsuit.page/assets/games/subway-surfers-unity/miami.html' },
+      { id: 'london',        name: 'London',        emoji: '🇬🇧', url: 'https://yell0wsuit.page/assets/games/subway-surfers-unity/london.html' },
+      { id: 'sanfrancisco',  name: 'San Francisco', emoji: '🌉', url: 'https://yell0wsuit.page/assets/games/subway-surfers-unity/index.html' },
+    ];
+
+    // ─── FAVORITES ───
+    function getFavs() {
+      return JSON.parse(localStorage.getItem('ovw4_favs') || '[]');
+    }
+    function toggleFav(id) {
+      let favs = getFavs();
+      if (favs.includes(id)) favs = favs.filter(f => f !== id);
+      else favs.push(id);
+      localStorage.setItem('ovw4_favs', JSON.stringify(favs));
+      renderMaps();
+    }
+
+    // ─── RENDER MAPS ───
+    function renderMaps(filter = '') {
+      const grid = document.getElementById('maps-grid');
+      const noRes = document.getElementById('no-results');
+      const favs = getFavs();
+      const filtered = maps.filter(m => m.name.toLowerCase().includes(filter.toLowerCase()));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        noRes.style.display = 'block';
+        return;
+      }
+      noRes.style.display = 'none';
+
+      grid.innerHTML = filtered.map((m, i) => `
+        <div class="map-card" onclick="openMap('${m.id}','${m.name}','${m.url}')">
+          <div class="map-thumb-placeholder">
+            <span style="font-size:3.5rem;z-index:1">${m.emoji}</span>
+          </div>
+          <div class="map-info">
+            <div>
+              <div class="map-name">${m.name}</div>
+            </div>
+            <button class="fav-btn ${favs.includes(m.id) ? 'active' : ''}"
+              onclick="event.stopPropagation(); toggleFav('${m.id}')"
+              title="Favori">
+              ${favs.includes(m.id) ? '⭐' : '☆'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterMaps() {
+      renderMaps(document.getElementById('search-input').value);
+    }
+
+    // ─── OPEN MAP ───
+    function openMap(id, name, url) {
+      const w = window.open('', '_blank');
+      const settings = getDisplaySettings();
+      let iframeStyle = 'border:none;display:block;';
+
+      if (settings.stretchEnabled) {
+        const factor = 1 + settings.stretchVal / 100;
+        iframeStyle += `width:${Math.round(factor * 100)}%;height:100vh;transform:scaleX(${1/factor});transform-origin:left top;`;
+      } else if (settings.resolution !== 'native') {
+        const [rw, rh] = settings.resolution.split('x').map(Number);
+        iframeStyle += `width:${rw}px;height:${rh}px;`;
+      } else {
+        iframeStyle += 'width:100%;height:100vh;';
+      }
+
+      w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OVW4 Subway - ${name}</title>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box; }
+    body { background:#000;overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center; }
+    iframe { ${iframeStyle} }
+  </style>
+</head>
+<body>
+  <iframe src="${url}" allowfullscreen allow="autoplay; fullscreen"></iframe>
+</body>
+</html>`);
+      w.document.close();
+    }
+
+    // ─── SETTINGS ───
+    function getDisplaySettings() {
+      return {
+        resolution: localStorage.getItem('ovw4_res') || 'native',
+        stretchEnabled: localStorage.getItem('ovw4_stretch') === 'true',
+        stretchVal: parseInt(localStorage.getItem('ovw4_stretch_val') || '0')
+      };
+    }
+
+    function openSettings() {
+      const pseudo = localStorage.getItem('ovw4_pseudo') || '';
+      document.getElementById('pseudo-input').value = pseudo;
+      const s = getDisplaySettings();
+      document.getElementById('stretch-toggle').checked = s.stretchEnabled;
+      document.getElementById('stretch-slider').value = s.stretchVal;
+      document.getElementById('stretch-val').textContent = s.stretchVal + '%';
+      document.getElementById('stretch-controls').style.opacity = s.stretchEnabled ? '1' : '0.4';
+      document.getElementById('stretch-controls').style.pointerEvents = s.stretchEnabled ? 'all' : 'none';
+      document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.res-btn[onclick="setRes('${s.resolution}')"]`)?.classList.add('active');
+      document.getElementById('res-current').textContent = s.resolution === 'native' ? 'Native' : s.resolution;
+      document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['general','display'][i] === name));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    function savePseudo() {
+      const val = document.getElementById('pseudo-input').value.trim() || 'Player';
+      localStorage.setItem('ovw4_pseudo', val);
+      document.getElementById('pseudo-display').textContent = val;
+      closeSettings();
+    }
+
+    function setRes(res) {
+      if (document.getElementById('stretch-toggle').checked) return;
+      localStorage.setItem('ovw4_res', res);
+      document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.res-btn[onclick="setRes('${res}')"]`)?.classList.add('active');
+      document.getElementById('res-current').textContent = res === 'native' ? 'Native' : res;
+    }
+
+    function toggleStretch() {
+      const on = document.getElementById('stretch-toggle').checked;
+      localStorage.setItem('ovw4_stretch', on);
+      document.getElementById('stretch-controls').style.opacity = on ? '1' : '0.4';
+      document.getElementById('stretch-controls').style.pointerEvents = on ? 'all' : 'none';
+    }
+
+    function updateStretch() {
+      const val = document.getElementById('stretch-slider').value;
+      document.getElementById('stretch-val').textContent = val + '%';
+      localStorage.setItem('ovw4_stretch_val', val);
+    }
+
+    function resetDisplay() {
+      localStorage.removeItem('ovw4_res');
+      localStorage.removeItem('ovw4_stretch');
+      localStorage.removeItem('ovw4_stretch_val');
+      openSettings();
+    }
+
+    function openDiscord() {
+      window.open('https://discord.com/invite/pvblueyeti', '_blank');
+    }
+
+    // ─── PSEUDO LOAD ───
+    const savedPseudo = localStorage.getItem('ovw4_pseudo') || 'Player';
+    document.getElementById('pseudo-display').textContent = savedPseudo;
+
+    // ─── INTRO ───
+    window.addEventListener('load', () => {
+      const audio = document.getElementById('intro-audio');
+      audio.play().catch(() => {});
+
+      setTimeout(() => {
+        const intro = document.getElementById('intro');
+        intro.classList.add('fade-out');
+        document.getElementById('app').classList.add('visible');
+        setTimeout(() => intro.remove(), 1000);
+      }, 5000);
+    });
+
+    // Close modal on overlay click
+    document.getElementById('settings-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeSettings();
+    });
+
+    renderMaps();
+  </script>
+</body>
+</html>
